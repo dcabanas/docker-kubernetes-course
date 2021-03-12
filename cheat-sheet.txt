@@ -1,0 +1,196 @@
+docker anycommand --help -> gets helps for specified command
+docker pull imagename -> pulls the remote image
+docker images -> lists all local pulled images
+docker container ls/docker ps -> lists all running containers
+docker stop containerID/containername -> stops the specified running container
+docker start containerID/containername -> starts already available local container
+docker rm containerID/containername -> removes specified container
+docker rm -f containerID/containername -> forces the removal of specified running container
+docker run -d -p host:container imagename:tag -> creates and starts a container in detacthed 
+mode (-d) mapping the hostport to the exposed containerport (-p) of specified image
+docker run --name -d -p host:container imagename:tag -> same as above but with custom name
+docker stop $(docker ps -aq) -> stops all running containers
+docker rm -v $(docker ps -aq) -> removes all containers and volumes
+docker rmi $(docker ps -aq) -> deletes all local images
+docker exec -it containername/containerID mainentrypointofcontainer -> CLI inside of container
+docker build -t imagename:latest Dockerfilepath -> build custom Image with tag latest (-t)
+docker tag imagename:tag newimagename:newtag -> custom tagging our images
+1º docker tag imagename:tag usernameacc/reponame:tag
+2º docker push usernameacc/reponame:tag -> push a new tag to our remote repo
+docker inspect containername/containerID -> to fully inspect the specified container
+docker logs -f containername/containerID -> to check all traffic coming through the specified
+container as well as the full behaviour. the (-f) flag is to follow the behaviour in terminal
+docker stats containername/containerID -> check MEM usage, CPU usage etc
+
+
+Theory:
+
+Docker is a tool for running applications in an isolated environment; Similar to a VM but it 
+doesnt require the same amount of resources; If it works on local machine it will work on 
+any machine with the same environment
+
+Docker uses Containers that are different from a VM -> containers are an abstraction at the
+app layer that packages code and dependencies together. Multiple containers can run on the
+same machine and share the OS kernel with other containers, each running as isolated processes
+in user space
+
+Containers benefits -> really fast to boot; less resources hence less disk space; less memory
+
+Image is a template for creating an environment of our choice; is a Snapshot (a version of the
+image) it can be multiple; contains everything the app needs to run (OS, software and app code);
+container is a running instance of an Image (an image can have multiple containers)
+
+whe running a container we can map multiple hostports to the containerport by simply adding 
+-p for each mapping desired
+
+to change the printing of docker ps -> 
+1º $HOME/.docker/config.json
+2º add the following 
+{
+  "psFormat":"ID\t{{.ID}}\nNAME\t{{.Names}}\nImage\t{{.Image}}\nPORTS\t{{.Ports}}\nCOMMAND\t{{.Command}}\nCREATED\t{{.CreatedAt}}\nSTATUS\t{{.Status}}\n"
+}
+
+Volumes allow the sharing of data (Files/Folders) between host and container, and between
+containers
+
+when running a container we can create volumes -> -v sourcepath:destpath:mode; the sourcepath
+and destpath can either be for host/container or container/host; when mounting the volumes
+the path inside de container needs to respect the folder structure of the image
+
+to create volumes between two containers, when creating (with run) the second container
+simply -> --volumes-from nameofavailablecontainer
+
+Dockerfile useful to build our own images -> a series of steps (commands) to create images
+
+when building our own Images there's no need to mount volumes since Images must have everything
+our app needs to run; and we always build our Images based on existing ones
+
+everytime we change something we need to run docker build, delete older version of the Image
+and any containers running it
+
+Alpine is a linux distro that when used with Docker it drastically reduces Images sizes.
+There is always an Alpine version for every Image
+
+Tags allow us to control Images versions; avoid breaking changes
+
+Registries are highly scalable server side applications that store and let us distribute
+Docker Images; used in our Continuous Delivery/Continuous Integration (CD/CI) Pipeline
+
+Registries can either be private or public
+
+----------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------
+For these commands is advised to run as administrator
+choco install minikube -> installs minikube and kubectl also comes along
+minikube start -> start Kubernetes cluster
+minikube delete -> deletes everything
+minikube stop -> halts the cluster
+minikube dashboard -> browser UI to look inside our Kubernetes cluster
+minikube service servicename -> assings an external IP to be accessible by the browser
+kubectl get nodes/pod/services/replicaset/deployment/secret/all -> get status of different 
+Kubernetes components
+kubectl create deployment deploymentname --image=imagename -> creates a deployment from the
+image
+kubectl logs podname -> log to console
+kubectl exec -it podname -- bin/bash ->interactive terminal inside Pod
+kubectl describe pod/service/etc componentname -> get info about component
+kubectl apply -f filename -> apply a configuration file instead of passing multiple options
+in the create command
+kubectl delete -f filename -> delete with configuration file
+
+
+Theory:
+
+Kubernetes is an open-source container orchestration tool; helps us manage containerized
+applications in different deployment environments (physical, virtual, cloud)
+
+Kubernetes offers -> high availability or no downtime; scalability or high performance;
+disaster recovery (backup and restore). In the latter, the application runs again with the
+last state before crashing
+
+Architecture -> there is at least one master node and multiple worker nodes, each having a 
+Kubelet process. This process allows the nodes to communicate with each other. Each worker
+node has different number of Docker containers, depending on how the workload is distributed.
+The applications run in the worker nodes.
+
+In the Master node there are important processes running necessary to the orchestration. One
+of them is the API Server (entrypoint to Kubernetes cluster where the clients communicate to);
+Other process is the Controller Manager (keeps track of whats happening in the cluster-if a
+container crashed and needs to be restarted etc); Other process is the Scheduler (responsible
+for scheduling containers on different nodes based on worload and available server resources
+on each node-basically decides where (worker node) the next container should run); Other
+really important process is the etcd key-value storage (basically holds at any time the
+current state of the Kubernetes cluster-the state of each node and each container).
+
+The Virtual Network allows all the nodes (workers and master(s)) to communicate -> it turns
+the Kubernetes cluster into one unified machine. Worker nodes have more resources available
+than the master(s) node(s).
+
+Pod is the smallest unit of Kubernetes, is an abstraction of container. The Pod creates a
+layer on top of the container so we only interact with Kubernetes layers. Usually one
+application per Pod but a Pod can have multiple containers. Each Pod gets its own IP address
+for communication, and each time a Pod crashes and gets re-created a new IP is re-assigned.
+
+Service is the component that establishes a permanent IP address to each Pod. Each Pod has its
+own Service component and the lifecycle of each one are not connected, which means if a Pod
+crashes the IP adress still lives. That are two types of Services (internal and external), the
+externals allow the communication to the world and the requests dont go directly to the Service,
+they first pass through the Ingress component.
+
+ConfigMap stores the external configuration of our application (DB URL for example)
+
+Secret is like ConfigMap component but stores secret data enconded in base64 (DB credentials)
+
+Secret and ConfigMap are connected to the application Pod and are used as Properties files or
+store the information as environment variables.
+
+Volumes are really important to store and keep our data (DB data, login data) persistent and
+long-term, by attaching a physical storage (local or remote-outside Kubernetes cluster) on a 
+hard-drive to our application Pod.
+
+Kubernetes cluster doesn't manage data persistance explicitely.
+
+In Kubernetes cluster everything must be replicated to guarantee high-availability; the
+replicas are connected to the same Service (because of this the Service is also a load balancer
+that fowards requests to other replicas)
+
+Deployment is the component where we specify the blueprints for our Pods (how many replicas of
+that Pod we want for example); we dont create Pods we create Deployments, and these are an
+abstraction of Pods
+
+Databases can't be replicated by Deployments because they have state therefore we need the
+StatefulSet component. This component guarantees that reads and writes to the DB are
+synchronized
+
+Deployment for stateLESS apps and StatefulSet for stateFULL apps or DBs
+
+Databases are often hosted outside of Kubernetes cluster
+
+Minikube is a Test/Local Cluster Setup comprising one Cluster node where the Master processes
+and Worker processes run on this single machine, comes with Docker pre-installed and creates 
+a Virtual Box for testing purposes
+
+From all 3 types (UI, API, CLI) of clients that communicate to our Kubernetes cluster through 
+the API Server, the most powerful is the kubectl (CLI)
+
+Minikube CLI -> for start up/deleting the cluster
+
+Kubectl CLI -> for configuring the Minikube cluster
+
+in the config YAML files the "spec" outside "template" is the specification for Deployment
+and the "spec" inside "template" is the blueprint for Pod; any time we change the config files
+we need to run apply -f again
+
+since credentials should be stored in base64 enconding inside Secret we can use ->
+powershell "[convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes(\"anything\"))"
+
+The Secret must be created before the Deployment because we need to reference it inside the
+Deployment
+
+Since usually Deployment and Service belong together they can be both puth in one file (as 2)
+using "---" in YAML; External Services are denoted by "type: LoadBalancer" and need a third
+port specified "nodePort:" with a range of values between 30000 and 32767
+
+When creating YAML config files for our Deployments we need to check and respect the ports
+and any environment variables the Images use
+
